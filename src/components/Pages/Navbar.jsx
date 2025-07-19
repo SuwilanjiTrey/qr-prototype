@@ -10,7 +10,7 @@ const Navbar = ({ isAdmin, isClient, currentUser, onSetIsAdmin, onSetIsClient, o
   const handleLogout = () => {
     // Call the logout function from App.jsx
     onLogout();
-    navigate("/"); // Redirect to homepage after logout
+    navigate("/qr-prototype"); // Redirect to homepage after logout
     setIsMobileMenuOpen(false); // Close mobile menu on logout
   };
 
@@ -26,7 +26,7 @@ const Navbar = ({ isAdmin, isClient, currentUser, onSetIsAdmin, onSetIsClient, o
     if (isAdmin) {
       return (
         <>
-          <Link to="/admin" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link to="/qr-prototype/admin" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
             <BarChart3 size={20} />
             <span>Dashboard</span>
           </Link>
@@ -47,7 +47,7 @@ const Navbar = ({ isAdmin, isClient, currentUser, onSetIsAdmin, onSetIsClient, o
     } else if (isClient) {
       return (
         <>
-          <Link to="/client" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link to="/qr-prototype/client" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
             <QrCode size={20} />
             <span>Dashboard</span>
           </Link>
@@ -68,24 +68,24 @@ const Navbar = ({ isAdmin, isClient, currentUser, onSetIsAdmin, onSetIsClient, o
     } else {
       return (
         <>
-          <Link to="/" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link to="/qr-prototype" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
             <Home size={20} />
             <span>Home</span>
           </Link>
-          <Link to="/about" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link to="/qr-prototype/about" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
             <Info size={16} />
             <span>About</span>
           </Link>
-          <Link to="/services" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link to="/qr-prototype/services" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
             <Settings size={16} />
             <span>Services</span>
           </Link>
-          <Link to="/contact" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
+          <Link to="/qr-prototype/contact" className="flex items-center space-x-2 hover:text-blue-200 transition-colors" onClick={() => setIsMobileMenuOpen(false)}>
             <Phone size={16} />
             <span>Contact</span>
           </Link>
           <Link
-            to="/login"
+            to="/qr-prototype/login"
             className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors flex items-center space-x-2 font-medium"
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -101,7 +101,7 @@ const Navbar = ({ isAdmin, isClient, currentUser, onSetIsAdmin, onSetIsClient, o
     <nav className="bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="text-2xl font-bold">QR Analytics</Link>
+          <Link to="/qr-prototype" className="text-2xl font-bold">QR Analytics</Link>
 
           {/* Hamburger menu button for small screens */}
           <div className="md:hidden">

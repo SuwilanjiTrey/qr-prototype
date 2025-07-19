@@ -119,9 +119,9 @@ const App = () => {
           <Routes>
             <Route path="/" element={<HomePage />} />
 	    <Route path="/qr-prototype" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/services" element={<ServicesPage />} />
-            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/qr-prototype/about" element={<AboutPage />} />
+            <Route path="/qr-prototype/services" element={<ServicesPage />} />
+            <Route path="/qr-prototype/contact" element={<ContactPage />} />
             <Route 
               path="/login" 
               element={
@@ -131,18 +131,18 @@ const App = () => {
                 />
               } 
             />
-            <Route path="/register/:qrCode" element={<RegisterPage />} />
+            <Route path="/qr-prototype/register/:qrCode" element={<RegisterPage />} />
 
             {isAdmin && (
               <Route 
-                path="/admin" 
+                path="/qr-prototype"/dmin" 
                 element={<AdminDashboard currentUser={currentUser} />} 
               />
             )}
 
             {isClient && (
               <Route 
-                path="/client" 
+                path="/qr-prototype/client" 
                 element={<ClientDashboard currentUser={currentUser} />} 
               />
             )}

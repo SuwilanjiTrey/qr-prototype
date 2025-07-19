@@ -91,7 +91,7 @@ const RegisterPage = () => {
           <h2 className="text-3xl font-bold text-green-600 mb-4">Registration Successful!</h2>
           <p className="text-gray-600 mb-6">Thank you for registering. We'll be in touch soon!</p>
           <Link
-            to="/"
+            to="/qr-prototype"
             className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
           >
             Back to Home
