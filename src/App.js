@@ -135,7 +135,7 @@ const App = () => {
 
             {isAdmin && (
               <Route 
-                path="/qr-prototype"/dmin" 
+                path="/qr-prototype/admin" 
                 element={<AdminDashboard currentUser={currentUser} />} 
               />
             )}
