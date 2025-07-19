@@ -78,7 +78,7 @@ Debug Info:
         
         if (userData) {
           onLogin('admin', userData);
-          navigate('/admin');
+          navigate('/qr-prototype/admin');
         } else {
           setError('Invalid admin credentials - check console for details');
         }
@@ -95,7 +95,7 @@ Debug Info:
         
         if (userData) {
           onLogin('client', userData);
-          navigate('/client');
+          navigate('/qr-prototype/client');
         } else {
           setError('Invalid email or password - check console for details');
         }

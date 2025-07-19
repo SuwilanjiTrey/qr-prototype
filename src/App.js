@@ -123,7 +123,7 @@ const App = () => {
             <Route path="/qr-prototype/services" element={<ServicesPage />} />
             <Route path="/qr-prototype/contact" element={<ContactPage />} />
             <Route 
-              path="/login" 
+              path="/qr-prototype/login" 
               element={
                 <LoginPage 
                   onLogin={handleLogin} 
