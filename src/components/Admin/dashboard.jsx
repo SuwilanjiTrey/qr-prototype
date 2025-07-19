@@ -1,142 +1,173 @@
-import React from 'react';
-import { QrCode, Users, BarChart3, Building, TrendingUp, LogOut } from 'lucide-react';
-import { getClientStats } from '../../utils/helper';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Users, QrCode, BarChart3, Plus, Home, Info, Phone, Settings, LogIn, UserPlus } from 'lucide-react';
+import { localStorageUtils , generateId } from '../data.jsx';
+import QRGenerator from '../qr_code.jsx';
+import { QRCodeSVG } from 'qrcode.react';
 
-const AdminDashboard = ({ 
-  currentUser, 
-  clients, 
-  registrations, 
-  qrClicks, 
-  onLogout, 
-  onTestQR 
-}) => {
-  const totalClicks = qrClicks.length;
-  const totalConversions = qrClicks.filter(click => click.converted).length;
-  const overallConversionRate = totalClicks > 0 ? (totalConversions / totalClicks * 100).toFixed(1) : 0;
-  const clientStats = getClientStats(clients, registrations, qrClicks);
+// Admin Dashboard
+const AdminDashboard = () => {
+  const [clients, setClients] = useState([]);
+  const [showQRModal, setShowQRModal] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+
+  useEffect(() => {
+    setClients(localStorageUtils.getClients());
+  }, []);
+
+  const handleCreateClient = (e) => {
+    e.preventDefault();
+    if (!newClientName.trim()) return;
+
+    const newClient = {
+      id: generateId(),
+      name: newClientName,
+      qrCode: `qr-${generateId()}`,
+      url: `/register/qr-${generateId()}`,
+      registrations: []
+    };
+
+    localStorageUtils.addClient(newClient);
+    setClients(localStorageUtils.getClients());
+    setNewClientName('');
+    setShowCreateForm(false);
+  };
+
+  const totalRegistrations = clients.reduce((sum, client) => sum + client.registrations.length, 0);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <QrCode className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-800">Admin Dashboard</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Welcome, {currentUser.name}</span>
-              <button
-                onClick={onLogout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center space-x-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-4xl font-bold">Admin Dashboard</h1>
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+        >
+          <Plus size={20} />
+          <span>Add Client</span>
+        </button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Total Clients</h3>
+          <p className="text-3xl font-bold text-blue-600">{clients.length}</p>
         </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">System Overview</h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total Clients</p>
-                  <p className="text-2xl font-bold">{clients.length}</p>
-                </div>
-                <Building className="h-8 w-8 text-blue-200" />
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Total Registrations</p>
-                  <p className="text-2xl font-bold">{registrations.length}</p>
-                </div>
-                <Users className="h-8 w-8 text-green-200" />
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Total QR Clicks</p>
-                  <p className="text-2xl font-bold">{totalClicks}</p>
-                </div>
-                <QrCode className="h-8 w-8 text-purple-200" />
-              </div>
-            </div>
-            
-            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">Conversion Rate</p>
-                  <p className="text-2xl font-bold">{overallConversionRate}%</p>
-                </div>
-                <TrendingUp className="h-8 w-8 text-orange-200" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-6">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Client Performance</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Client</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Industry</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">QR Clicks</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Registrations</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Conversion Rate</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientStats.map(client => (
-                    <tr key={client.id} className="border-b border-gray-100 hover:bg-white transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="font-medium text-gray-800">{client.name}</div>
-                        <div className="text-sm text-gray-500">ID: {client.id}</div>
-                      </td>
-                      <td className="py-3 px-4 text-gray-600">{client.industry}</td>
-                      <td className="py-3 px-4">
-                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm font-medium">
-                          {client.clicks}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-medium">
-                          {client.registrations}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                          {client.conversionRate}%
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <button
-                          onClick={() => onTestQR(client.id)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors"
-                        >
-                          Test QR
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Total Registrations</h3>
+          <p className="text-3xl font-bold text-green-600">{totalRegistrations}</p>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-2">Average per Client</h3>
+          <p className="text-3xl font-bold text-purple-600">
+            {clients.length > 0 ? Math.round(totalRegistrations / clients.length) : 0}
+          </p>
         </div>
       </div>
+
+      {/* Clients Table */}
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Client
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Registrations
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                QR Code
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {clients.map((client) => (
+              <tr key={client.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="font-medium text-gray-900">{client.name}</div>
+                  <div className="text-sm text-gray-500">{client.qrCode}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-lg font-semibold">{client.registrations.length}</span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm">
+                    <QRCodeSVG value={`${window.location.origin}/register/${client.qrCode}`} size={40} />
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => setShowQRModal(client)}
+                    className="text-blue-600 hover:text-blue-900 mr-4"
+                  >
+                    View QR
+                  </button>
+                  <Link
+                    to={`/register/${client.qrCode}`}
+                    className="text-green-600 hover:text-green-900"
+                    target="_blank"
+                  >
+                    Test Link
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Create Client Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Create New Client</h3>
+            <form onSubmit={handleCreateClient}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Name
+                </label>
+                <input
+                  type="text"
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter client name"
+                  required
+                />
+              </div>
+              <div className="flex space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateForm(false)}
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* QR Modal */}
+      {showQRModal && (
+        <QRGenerator
+          client={showQRModal}
+          onClose={() => setShowQRModal(null)}
+        />
+      )}
     </div>
   );
 };

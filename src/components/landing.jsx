@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, MapPin, Clock, Users, Music, Star, Sparkles, Heart, Camera, Ticket } from 'lucide-react';
+import RegisterPage from './AnA/Registration.jsx'
 
 // Music Festival Landing Page
 export const MusicFestivalPage = () => {
@@ -8,6 +9,25 @@ export const MusicFestivalPage = () => {
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  // Define artist data with online image URLs
+  const artists = [
+    {
+      name: 'Electric Dreams',
+      genre: 'Electronic',
+      imageUrl: '/qr-prototype/img1.jpeg' // Placeholder 1
+    },
+    {
+      name: 'Neon Nights',
+      genre: 'Synthwave',
+      imageUrl: '/qr-prototype/img2.png' // Placeholder 2
+    },
+    {
+      name: 'Cosmic Vibes',
+      genre: 'Ambient',
+      imageUrl: '/qr-prototype/img3.jpeg' // Placeholder 3
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-pink-900 to-orange-900 relative overflow-hidden">
@@ -26,7 +46,7 @@ export const MusicFestivalPage = () => {
           />
         ))}
       </div>
-      
+
       <div className="relative z-10">
         {/* Header */}
         <nav className="p-6 flex justify-between items-center backdrop-blur-sm bg-black/20">
@@ -51,7 +71,7 @@ export const MusicFestivalPage = () => {
             <p className="text-lg text-white/70 mb-8 max-w-2xl mx-auto">
               Experience the ultimate music festival with world-class artists, incredible vibes, and unforgettable memories
             </p>
-            
+
             <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-12">
               <div className="flex items-center space-x-2 text-white/80">
                 <Calendar className="h-5 w-5" />
@@ -84,21 +104,23 @@ export const MusicFestivalPage = () => {
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl font-bold text-center text-white mb-12">Featured Artists</h2>
             <div className="grid md:grid-cols-3 gap-8">
-              {[
-                { name: 'Electric Dreams', genre: 'Electronic', image: 'bg-gradient-to-br from-cyan-400 to-blue-600' },
-                { name: 'Neon Nights', genre: 'Synthwave', image: 'bg-gradient-to-br from-pink-400 to-purple-600' },
-                { name: 'Cosmic Vibes', genre: 'Ambient', image: 'bg-gradient-to-br from-orange-400 to-red-600' }
-              ].map((artist, i) => (
+              {artists.map((artist, i) => ( // Use the 'artists' array defined above
                 <div key={i} className="group cursor-pointer">
-                  <div className={`${artist.image} h-64 rounded-2xl p-6 flex flex-col justify-end transform group-hover:scale-105 transition-all duration-300`}>
-                    <h3 className="text-2xl font-bold text-white mb-2">{artist.name}</h3>
-                    <p className="text-white/80">{artist.genre}</p>
+                  <div
+                    className="h-64 rounded-2xl p-6 flex flex-col justify-end transform group-hover:scale-105 transition-all duration-300 bg-cover bg-center"
+                    style={{ backgroundImage: `url(${artist.imageUrl})` }} // <--- Updated here
+                  >
+                    <h3 className="text-2xl font-bold text-white mb-2 text-shadow-md">{artist.name}</h3>
+                    <p className="text-white/80 text-shadow-sm">{artist.genre}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
         </div>
+
+       
+         <RegisterPage /> 
       </div>
     </div>
   );
