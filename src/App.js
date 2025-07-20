@@ -13,6 +13,7 @@ import Navbar from './components/Pages/Navbar.jsx';
 import Footer from './components/Pages/Footer.jsx';
 import { localStorageUtils, clientStorageUtils } from './components/data.jsx';
 import ClientDashboard from './components/Client/dashboard.jsx';
+import ColorFest from './components/Events/colorfest.jsx';
 
 // Main App Component
 const App = () => {
@@ -133,7 +134,7 @@ const App = () => {
                 />
               } 
             />
-            <Route path="/register/:qrCode" element={<RegisterPage />} />
+            <Route path="/register/:qrCode" element={<ColorFest />} />
 
             {isAdmin && (
               <Route 

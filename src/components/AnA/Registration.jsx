@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { localStorageUtils } from '../data.jsx';
 
+
+
+
 // Registration Form Component
 const RegistrationForm = ({ qrCode, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -23,46 +26,58 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
     onSuccess();
   };
 
-  return (
-    <div className="bg-white p-8 rounded-lg shadow-lg">
-      <h3 className="text-2xl font-bold mb-6 text-center">Register Now</h3>
-      <form onSubmit={handleSubmit} className="space-y-4">
+return (
+    <div className=" p-0">
+      <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
           <input
             type="text"
+            placeholder="Full Name"
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
           />
         </div>
+        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
           <input
             type="email"
+            placeholder="Email Address"
             value={formData.email}
             onChange={(e) => setFormData({...formData, email: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            required
+            className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
           />
         </div>
+        
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
           <input
             type="tel"
+            placeholder="Phone Number"
             value={formData.phone}
             onChange={(e) => setFormData({...formData, phone: e.target.value})}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
           />
         </div>
+        
+        <div>
+          <select
+            value={formData.ticketType}
+            onChange={(e) => setFormData({...formData, ticketType: e.target.value})}
+            className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
+          >
+            <option value="general">General Admission - K150</option>
+            <option value="vip">VIP Experience - K350</option>
+            <option value="family">Family Pack (4 tickets) - K500</option>
+          </select>
+        </div>
+        
         <button
-          type="submit"
-          className="w-full bg-green-600 text-white py-3 px-4 rounded-md hover:bg-green-700 transition-colors font-semibold"
+          onClick={handleSubmit}
+          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white p-4 rounded-xl font-bold text-lg hover:from-pink-600 hover:to-purple-700 transition-all transform active:scale-95 shadow-lg"
         >
-          Register
+          Register Now - Join the Colors! 🎉
         </button>
-      </form>
+      </div>
     </div>
   );
 };
@@ -83,26 +98,23 @@ const RegisterPage = () => {
     setRegistered(true);
   };
 
-if (!qrCode) {
-  return <div className="text-center mt-20 text-red-600">Invalid or missing QR Code in URL.</div>;
-}
 
 
   if (registered) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
-        <div className="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-3xl font-bold text-green-600 mb-4">Registration Successful!</h2>
-          <p className="text-gray-600 mb-6">Thank you for registering. We'll be in touch soon!</p>
-          <Link
+      <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center p-4">
+    <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4">
+      <div className="text-7xl mb-6 animate-bounce">🎉</div>
+      <h2 className="text-3xl font-bold text-green-600 mb-4">You're In!</h2>
+      <p className="text-gray-600 mb-8 text-lg">Thanks for registering! We'll send you all the details soon.</p>
+       <Link
             to="/qr-prototype"
             className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
           >
             Back to Home
           </Link>
-        </div>
-      </div>
+    </div>
+  </div>
     );
   }
 
@@ -125,7 +137,7 @@ return (
         </p>
       </div>
 
-      <div className="backdrop-blur-lg bg-white/30 p-10 rounded-2xl shadow-xl max-w-lg w-full">
+      <div className="backdrop-blur-lg bg-white/30 p-0 rounded-2xl shadow-xl max-w-lg w-full">
         <RegistrationForm qrCode={qrCode} onSuccess={handleRegistrationSuccess} />
       </div>
     </div>
