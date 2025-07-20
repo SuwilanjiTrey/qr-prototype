@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 // QR Generator Component
 const QRGenerator = ({ client, onClose }) => {
-  const qrUrl = `${window.location.origin}/register/${client.qrCode}`;
+  const qrUrl = `${window.location.origin}/qr-prototype/#/register/${client.qrCode}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">

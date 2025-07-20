@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { localStorageUtils } from '../data.jsx';
 
 // Registration Form Component
@@ -83,6 +83,11 @@ const RegisterPage = () => {
     setRegistered(true);
   };
 
+if (!qrCode) {
+  return <div className="text-center mt-20 text-red-600">Invalid or missing QR Code in URL.</div>;
+}
+
+
   if (registered) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
@@ -101,24 +106,32 @@ const RegisterPage = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="container mx-auto px-4 py-12">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
-            Welcome to Our Event!
-          </h1>
-          <p className="text-xl text-gray-600">
-            {client ? `Referred by: ${client.name}` : 'Join our exclusive event'}
-          </p>
-        </div>
-        
-        <div className="max-w-md mx-auto">
-          <RegistrationForm qrCode={qrCode} onSuccess={handleRegistrationSuccess} />
-        </div>
+return (
+  <div className="relative min-h-screen bg-gradient-to-br from-purple-600 via-indigo-500 to-blue-500 overflow-hidden">
+    
+    {/* 🔵 Animated gradient blobs */}
+    <div className="absolute inset-0 overflow-hidden z-0">
+      <div className="absolute top-10 left-10 w-72 h-72 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+      <div className="absolute top-32 right-10 w-72 h-72 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+      <div className="absolute bottom-10 left-1/3 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    </div>
+
+    {/* 🟢 Main content */}
+    <div className="relative z-10 container mx-auto px-4 py-16 flex flex-col items-center">
+      <div className="text-center mb-12 text-white">
+        <h1 className="text-5xl font-extrabold drop-shadow-lg">🎉 Welcome to Our Event!</h1>
+        <p className="mt-4 text-xl">
+          {client ? `Referred by: ${client.name}` : 'Join our exclusive celebration'}
+        </p>
+      </div>
+
+      <div className="backdrop-blur-lg bg-white/30 p-10 rounded-2xl shadow-xl max-w-lg w-full">
+        <RegistrationForm qrCode={qrCode} onSuccess={handleRegistrationSuccess} />
       </div>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default RegisterPage;

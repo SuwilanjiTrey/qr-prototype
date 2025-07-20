@@ -17,7 +17,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
   useEffect(() => {
     if (isLoggedIn) {
       const role = authUtils.getCurrentRole();
-      navigate(role === 'admin' ? '/admin' : '/client');
+      navigate(role === 'admin' ? '/qr-prototype/admin' : '/qr-prototype/client');
     }
   }, [isLoggedIn, navigate]);
 
@@ -115,7 +115,7 @@ Debug Info:
     if (adminUser) {
       const { password, ...userWithoutPassword } = adminUser;
       onLogin('admin', userWithoutPassword);
-      navigate('/admin');
+      navigate('/qr-prototype/admin');
     } else {
       alert('No admin user found!');
     }

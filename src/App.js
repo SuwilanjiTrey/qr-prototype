@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 
 import HomePage from './components/Homepage.jsx';
@@ -122,6 +122,8 @@ const App = () => {
             <Route path="/qr-prototype/about" element={<AboutPage />} />
             <Route path="/qr-prototype/services" element={<ServicesPage />} />
             <Route path="/qr-prototype/contact" element={<ContactPage />} />
+	  
+
             <Route 
               path="/qr-prototype/login" 
               element={
@@ -131,7 +133,7 @@ const App = () => {
                 />
               } 
             />
-            <Route path="/qr-prototype/register/:qrCode" element={<RegisterPage />} />
+            <Route path="/register/:qrCode" element={<RegisterPage />} />
 
             {isAdmin && (
               <Route 

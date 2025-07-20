@@ -18,7 +18,7 @@ const ClientDashboard = ({ clientId = 'client-abc123' }) => {
     const data = clientStorageUtils.getClientData(clientId);
     setClientData(data);
     setStats(clientStorageUtils.getRegistrationStats(data.registrations));
-    setNewLandingUrl(`/register/${data.qrCode}`);
+    setNewLandingUrl(`/qr-prototype/#/register/${data.qrCode}`);
     setLoading(false);
   }, [clientId]);
 
@@ -81,7 +81,7 @@ const ClientDashboard = ({ clientId = 'client-abc123' }) => {
     );
   }
 
-  const qrUrl = `${window.location.origin}/register/${clientData.qrCode}`;
+  const qrUrl = `${window.location.origin}/qr-prototype/#/register/${clientData.qrCode}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -301,7 +301,7 @@ const ClientDashboard = ({ clientId = 'client-abc123' }) => {
             <h3 className="text-2xl font-bold mb-4 text-center">Your QR Code</h3>
             <div className="text-center mb-4">
               <QRCodeSVG value={qrUrl} size={250} />
-            </div>
+            </div>BrowserRouter
             <p className="text-sm text-gray-600 mb-4 text-center break-all">
               {qrUrl}
             </p>
