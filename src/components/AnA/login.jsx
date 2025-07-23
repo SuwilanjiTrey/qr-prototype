@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authUtils, clientStorageUtils, localStorageUtils } from '../data.jsx';
+import { authUtils, firebaseUtils, clientOperationsUtils } from '../data.jsx';
 
 const LoginPage = ({ onLogin, isLoggedIn }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +11,7 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
+  const [initializing, setInitializing] = useState(true);
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -21,17 +22,23 @@ const LoginPage = ({ onLogin, isLoggedIn }) => {
     }
   }, [isLoggedIn, navigate]);
 
-  // Initialize sample client data and show debug info
+  // Initialize Firebase data and show debug info
   useEffect(() => {
-    // Initialize data
-    localStorageUtils.initializeAdmin();
-    clientStorageUtils.initializeSampleClient();
-    
-    // Show debug info
-    const clients = localStorageUtils.getClients();
-    console.log('All clients in localStorage:', clients);
-    
-    const debugText = `
+    const initializeData = async () => {
+      try {
+        setInitializing(true);
+        
+        // Initialize admin
+        await firebaseUtils.initializeAdmin();
+        
+        // Initialize sample client data
+        await clientOperationsUtils.initializeSampleClient();
+        
+        // Get all clients for debug info
+        const clients = await firebaseUtils.getClients();
+        console.log('All clients in Firebase:', clients);
+        
+        const debugText = `
 Debug Info:
 - Total clients: ${clients.length}
 - Admin exists: ${clients.some(c => c.role === 'admin')}
@@ -39,8 +46,17 @@ Debug Info:
 - Admin has password: ${!!clients.find(c => c.role === 'admin')?.password}
 - Client exists: ${clients.some(c => c.role === 'client')}
 - Client email: ${clients.find(c => c.role === 'client')?.email || 'Not found'}
-    `;
-    setDebugInfo(debugText);
+        `;
+        setDebugInfo(debugText);
+      } catch (error) {
+        console.error('Error initializing data:', error);
+        setError('Failed to initialize application data');
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    initializeData();
   }, []);
 
   const handleInputChange = (e) => {
@@ -66,42 +82,32 @@ Debug Info:
       if (formData.loginType === 'admin') {
         console.log('Attempting admin login...');
         
-        // Debug: Check what's in localStorage
-        const clients = localStorageUtils.getClients();
-        const adminUser = clients.find(c => c.role === 'admin');
-        console.log('Admin user in storage:', adminUser);
-        console.log('Looking for email:', formData.email);
-        console.log('Password match:', adminUser?.password === formData.password);
-        
-        userData = authUtils.validateAdmin(formData.email, formData.password);
+        userData = await authUtils.validateAdmin(formData.email, formData.password);
         console.log('Admin validation result:', userData);
         
         if (userData) {
+          authUtils.setCurrentUser(userData);
           onLogin('admin', userData);
           navigate('/qr-prototype/admin');
         } else {
-          setError('Invalid admin credentials - check console for details');
+          setError('Invalid admin credentials');
         }
       } else {
         console.log('Attempting client login...');
         
-        // Debug: Check client data
-        const clients = localStorageUtils.getClients();
-        const clientUser = clients.find(c => c.role === 'client' && c.email === formData.email);
-        console.log('Client user in storage:', clientUser);
-        
-        userData = authUtils.validateClient(formData.email, formData.password);
+        userData = await authUtils.validateClient(formData.email, formData.password);
         console.log('Client validation result:', userData);
         
         if (userData) {
+          authUtils.setCurrentUser(userData);
           onLogin('client', userData);
           navigate('/qr-prototype/client');
         } else {
-          setError('Invalid email or password - check console for details');
+          setError('Invalid email or password');
         }
       }
     } catch (err) {
-      setError('An error occurred during login');
+      setError('An error occurred during login. Please try again.');
       console.error('Login error:', err);
     } finally {
       setLoading(false);
@@ -109,22 +115,41 @@ Debug Info:
   };
 
   // Manual debug buttons
-  const handleForceAdmin = () => {
-    const clients = localStorageUtils.getClients();
-    const adminUser = clients.find(c => c.role === 'admin');
-    if (adminUser) {
-      const { password, ...userWithoutPassword } = adminUser;
-      onLogin('admin', userWithoutPassword);
-      navigate('/qr-prototype/admin');
-    } else {
-      alert('No admin user found!');
+  const handleForceAdmin = async () => {
+    try {
+      const clients = await firebaseUtils.getClients();
+      const adminUser = clients.find(c => c.role === 'admin');
+      if (adminUser) {
+        const { password, ...userWithoutPassword } = adminUser;
+        authUtils.setCurrentUser(userWithoutPassword);
+        onLogin('admin', userWithoutPassword);
+        navigate('/qr-prototype/admin');
+      } else {
+        alert('No admin user found!');
+      }
+    } catch (error) {
+      console.error('Error forcing admin login:', error);
+      alert('Error accessing admin account');
     }
   };
 
   const handleClearStorage = () => {
+    authUtils.clearAuth();
     localStorage.clear();
+    sessionStorage.clear();
     window.location.reload();
   };
+
+  if (initializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing application...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -135,7 +160,7 @@ Debug Info:
           </h2>
         </div>
 
-        {/* Debug Information 
+        {/* Debug Information */}
         <div className="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 rounded text-xs">
           <pre>{debugInfo}</pre>
           <div className="mt-2 space-x-2">
@@ -153,8 +178,6 @@ Debug Info:
             </button>
           </div>
         </div>
-	------DEBUGGING CODE //UNCOMENT THIS SECTION TO DEBUG -------
-	*/}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
@@ -176,7 +199,7 @@ Debug Info:
                   <span className="ml-2">Client</span>
                 </label>
                 <label className="inline-flex items-center">
-                  <input
+                  <input 
                     type="radio"
                     name="loginType"
                     value="admin"
@@ -240,10 +263,10 @@ Debug Info:
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || initializing}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Signing in...' : initializing ? 'Initializing...' : 'Sign in'}
             </button>
           </div>
         </form>
