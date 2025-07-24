@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, QrCode, BarChart3, Plus, Home, Info, Phone, Settings, LogIn, UserPlus } from 'lucide-react';
-import { localStorageUtils , generateId } from '../data.jsx';
+import { firebaseUtils, generateId } from '../data.jsx';
 import QRGenerator from '../qr_code.jsx';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -11,30 +11,93 @@ const AdminDashboard = () => {
   const [showQRModal, setShowQRModal] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newClientName, setNewClientName] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setClients(localStorageUtils.getClients());
+    loadClients();
   }, []);
 
-  const handleCreateClient = (e) => {
+  const loadClients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const clientsData = await firebaseUtils.getClients();
+      
+      // Transform the data to include registrations count
+      const clientsWithStats = await Promise.all(
+        clientsData.map(async (client) => {
+          try {
+            // Get registrations for this client
+            const { registrationUtils } = await import('../data.jsx');
+            const registrations = await registrationUtils.getRegistrationsByClientId(client.id);
+            return {
+              ...client,
+              registrations: registrations || []
+            };
+          } catch (err) {
+            console.error(`Error loading registrations for client ${client.id}:`, err);
+            return {
+              ...client,
+              registrations: []
+            };
+          }
+        })
+      );
+      
+      setClients(clientsWithStats);
+    } catch (err) {
+      console.error('Error loading clients:', err);
+      setError('Failed to load clients. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateClient = async (e) => {
     e.preventDefault();
     if (!newClientName.trim()) return;
 
-    const newClient = {
-      id: generateId(),
-      name: newClientName,
-      qrCode: `qr-${generateId()}`,
-      url: `/register/qr-${generateId()}`,
-      registrations: []
-    };
+    try {
+      setError(null);
+      const qrCode = `qr-${generateId()}`;
+      const newClientData = {
+        name: newClientName,
+        qrCode: qrCode,
+        url: `/register/${qrCode}`,
+        email: `${newClientName.toLowerCase().replace(/\s+/g, '')}@client.com`,
+        phone: '',
+        password: 'client123', // In production, generate a secure password
+        role: 'client'
+      };
 
-    localStorageUtils.addClient(newClient);
-    setClients(localStorageUtils.getClients());
-    setNewClientName('');
-    setShowCreateForm(false);
+      const addedClient = await firebaseUtils.addClient(newClientData);
+      
+      // Add the new client to the state with empty registrations
+      setClients(prevClients => [
+        ...prevClients,
+        { ...addedClient, registrations: [] }
+      ]);
+      
+      setNewClientName('');
+      setShowCreateForm(false);
+    } catch (err) {
+      console.error('Error creating client:', err);
+      setError('Failed to create client. Please try again.');
+    }
   };
 
-  const totalRegistrations = clients.reduce((sum, client) => sum + client.registrations.length, 0);
+  const totalRegistrations = clients.reduce((sum, client) => sum + (client.registrations?.length || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -48,6 +111,18 @@ const AdminDashboard = () => {
           <span>Add Client</span>
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+          <button 
+            onClick={loadClients}
+            className="ml-4 text-red-800 underline hover:no-underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -92,9 +167,10 @@ const AdminDashboard = () => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-gray-900">{client.name}</div>
                   <div className="text-sm text-gray-500">{client.qrCode}</div>
+                  <div className="text-xs text-gray-400">{client.email}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="text-lg font-semibold">{client.registrations.length}</span>
+                  <span className="text-lg font-semibold">{client.registrations?.length || 0}</span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm">
@@ -120,6 +196,12 @@ const AdminDashboard = () => {
             ))}
           </tbody>
         </table>
+        
+        {clients.length === 0 && !loading && (
+          <div className="p-6 text-center text-gray-500">
+            No clients found. Create your first client to get started!
+          </div>
+        )}
       </div>
 
       {/* Create Client Modal */}
@@ -140,6 +222,9 @@ const AdminDashboard = () => {
                   placeholder="Enter client name"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  A unique QR code and email will be automatically generated
+                </p>
               </div>
               <div className="flex space-x-4">
                 <button

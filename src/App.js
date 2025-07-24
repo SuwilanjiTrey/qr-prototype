@@ -11,7 +11,8 @@ import RegisterPage from './components/AnA/Registration.jsx';
 import AdminDashboard from './components/Admin/dashboard.jsx';
 import Navbar from './components/Pages/Navbar.jsx';
 import Footer from './components/Pages/Footer.jsx';
-import { localStorageUtils, clientStorageUtils } from './components/data.jsx';
+import authUtils from './utils/auth_util.jsx';
+import { firebaseUtils, clientOperationsUtils } from './components/data.jsx';
 import ClientDashboard from './components/Client/dashboard.jsx';
 import ColorFest from './components/Events/colorfest.jsx';
 
@@ -23,22 +24,35 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Initialize admin client on first load
-    localStorageUtils.initializeAdmin();
-    
-    // Check if user is already logged in
-    initializeUserState();
+    // Initialize Firebase and user state on first load
+    initializeApp();
   }, []);
 
-  const initializeUserState = () => {
+  const initializeApp = async () => {
     try {
-      // Check for stored session data
-      const storedUser = localStorage.getItem('currentUser');
-      const storedRole = localStorage.getItem('userRole');
+      // Initialize admin account if not exists
+      await firebaseUtils.initializeAdmin();
+      
+      // Initialize sample client data for demo purposes
+      await clientOperationsUtils.initializeSampleClient();
+      
+      // Check if user is already logged in
+      await initializeUserState();
+    } catch (error) {
+      console.error('Error initializing app:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const initializeUserState = async () => {
+    try {
+      // Check for stored session data using Firebase auth utils
+      const storedUser = authUtils.getCurrentUser();
+      const storedRole = authUtils.getCurrentRole();
       
       if (storedUser && storedRole) {
-        const userData = JSON.parse(storedUser);
-        setCurrentUser(userData);
+        setCurrentUser(storedUser);
         
         if (storedRole === 'admin') {
           setIsAdmin(true);
@@ -51,32 +65,30 @@ const App = () => {
     } catch (error) {
       console.error('Error initializing user state:', error);
       // Clear corrupted data
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('userRole');
-    } finally {
-      setIsLoading(false);
+      authUtils.clearAuth();
     }
   };
 
-  const handleLogin = (role, userData = null) => {
+  const handleLogin = async (role, userData = null) => {
     try {
-      // Store login state in localStorage for persistence
-      localStorage.setItem('userRole', role);
+      // If userData is provided, use it directly
       if (userData) {
-        localStorage.setItem('currentUser', JSON.stringify(userData));
+        // Store login state using Firebase auth utils
+        authUtils.setCurrentUser(userData);
         setCurrentUser(userData);
+
+        if (role === 'admin') {
+          setIsAdmin(true);
+          setIsClient(false);
+        } else if (role === 'client') {
+          setIsClient(true);
+          setIsAdmin(false);
+        }
+        return;
       }
 
-      if (role === 'admin') {
-        setIsAdmin(true);
-        setIsClient(false);
-      } else if (role === 'client') {
-        setIsClient(true);
-        setIsAdmin(false);
-      } else {
-        // Handle logout or invalid role
-        handleLogout();
-      }
+      // If no userData provided, this is a logout scenario
+      handleLogout();
     } catch (error) {
       console.error('Error during login:', error);
     }
@@ -88,9 +100,8 @@ const App = () => {
     setIsClient(false);
     setCurrentUser(null);
     
-    // Clear localStorage
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('userRole');
+    // Clear Firebase auth session
+    authUtils.signOut();
   };
 
   // Show loading spinner while initializing
@@ -99,7 +110,7 @@ const App = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <p className="mt-4 text-gray-600">Initializing Firebase...</p>
         </div>
       </div>
     );
@@ -119,11 +130,10 @@ const App = () => {
         <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
-	    <Route path="/qr-prototype" element={<HomePage />} />
+            <Route path="/qr-prototype" element={<HomePage />} />
             <Route path="/qr-prototype/about" element={<AboutPage />} />
             <Route path="/qr-prototype/services" element={<ServicesPage />} />
             <Route path="/qr-prototype/contact" element={<ContactPage />} />
-	  
 
             <Route 
               path="/qr-prototype/login" 
