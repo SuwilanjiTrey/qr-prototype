@@ -45,11 +45,23 @@ Collections Structure:
      - initialized: boolean
      - lastUpdated: timestamp
 
-Note: Security rules are already configured in your existing Firestore rules.
+Note: Security rules are configured to allow initialization without authentication.
 */
 
 // Firebase utilities for client operations
 const firebaseUtils = {
+  // Check if system is initialized
+  isSystemInitialized: async () => {
+    try {
+      const adminSettingsRef = doc(db, 'qr_admin', 'settings');
+      const adminSettingsSnap = await getDoc(adminSettingsRef);
+      return adminSettingsSnap.exists() && adminSettingsSnap.data()?.settings?.initialized === true;
+    } catch (error) {
+      console.error('Error checking system initialization:', error);
+      return false;
+    }
+  },
+
   // Get all clients (admin only)
   getClients: async () => {
     try {
@@ -142,37 +154,39 @@ const firebaseUtils = {
     }
   },
 
-  // Initialize admin account
+  // Initialize admin account - UPDATED to work without authentication
   initializeAdmin: async () => {
     try {
-      const adminSettingsRef = doc(db, 'qr_admin', 'settings');
-      const adminSettingsSnap = await getDoc(adminSettingsRef);
-      
-      if (!adminSettingsSnap.exists()) {
-        // Create admin client
-        const adminData = {
-          name: 'Admin',
-          qrCode: 'admin-qr',
-          url: '/register/admin-qr',
-          email: 'admin@system.com',
-          password: 'admin123', // Hash this in production with Firebase Auth
-          role: 'admin'
-        };
-        
-        const adminClient = await firebaseUtils.addClient(adminData);
-        
-        // Mark admin as initialized
-        await setDoc(adminSettingsRef, {
-          settings: {
-            initialized: true,
-            adminClientId: adminClient.id,
-            lastUpdated: serverTimestamp()
-          }
-        });
-        
-        return adminClient;
+      // First check if already initialized
+      const isInitialized = await firebaseUtils.isSystemInitialized();
+      if (isInitialized) {
+        console.log('System already initialized');
+        return null;
       }
-      return null;
+
+      // Create admin client first
+      const adminData = {
+        name: 'Admin',
+        qrCode: 'admin-qr',
+        url: '/register/admin-qr',
+        email: 'admin@system.com',
+        password: 'admin123', // Hash this in production with Firebase Auth
+        role: 'admin'
+      };
+      
+      const adminClient = await firebaseUtils.addClient(adminData);
+      
+      // Mark admin as initialized
+      const adminSettingsRef = doc(db, 'qr_admin', 'settings');
+      await setDoc(adminSettingsRef, {
+        settings: {
+          initialized: true,
+          adminClientId: adminClient.id,
+          lastUpdated: serverTimestamp()
+        }
+      });
+      
+      return adminClient;
     } catch (error) {
       console.error('Error initializing admin:', error);
       throw error;
@@ -531,6 +545,43 @@ const clientOperationsUtils = {
     } catch (error) {
       console.error('Error initializing sample client:', error);
       throw error;
+    }
+  },
+
+  // Initialize the entire system - call this on app startup
+  initializeSystem: async () => {
+    try {
+      console.log('Initializing QR Registration System...');
+      
+      // Check if system is already initialized
+      const isInitialized = await firebaseUtils.isSystemInitialized();
+      if (isInitialized) {
+        console.log('System already initialized');
+        return { success: true, message: 'System already initialized' };
+      }
+
+      // Initialize admin
+      console.log('Creating admin account...');
+      const adminClient = await firebaseUtils.initializeAdmin();
+      
+      // Initialize sample client
+      console.log('Creating sample client...');
+      const sampleClient = await clientOperationsUtils.initializeSampleClient();
+      
+      console.log('System initialization completed successfully');
+      return { 
+        success: true, 
+        message: 'System initialized successfully',
+        adminClient,
+        sampleClient
+      };
+    } catch (error) {
+      console.error('Error initializing system:', error);
+      return { 
+        success: false, 
+        message: 'System initialization failed',
+        error: error.message
+      };
     }
   }
 };

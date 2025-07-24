@@ -11,7 +11,8 @@ import RegisterPage from './components/AnA/Registration.jsx';
 import AdminDashboard from './components/Admin/dashboard.jsx';
 import Navbar from './components/Pages/Navbar.jsx';
 import Footer from './components/Pages/Footer.jsx';
-import { firebaseUtils, authUtils, clientOperationsUtils } from './components/data.jsx';
+import authUtils from './utils/auth_util.jsx';
+import { firebaseUtils, clientOperationsUtils } from './components/data.jsx';
 import ClientDashboard from './components/Client/dashboard.jsx';
 import ColorFest from './components/Events/colorfest.jsx';
 
@@ -100,7 +101,7 @@ const App = () => {
     setCurrentUser(null);
     
     // Clear Firebase auth session
-    authUtils.clearAuth();
+    authUtils.signOut();
   };
 
   // Show loading spinner while initializing

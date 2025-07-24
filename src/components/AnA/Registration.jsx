@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom';
-import { firebaseUtils, registrationUtils } from '../data.jsx';
+import { registrationUtils } from '../data.jsx';
+import { authUtils } from '../../utils/auth_util.jsx'; // Import from the separate auth utils file
 
 // Registration Form Component
 const RegistrationForm = ({ qrCode, onSuccess }) => {
@@ -21,6 +22,13 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
       return;
     }
 
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
     setSubmitting(true);
     
     try {
@@ -30,7 +38,8 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
         qrCode: qrCode
       };
       
-      await registrationUtils.addRegistration(qrCode, registration);
+      const result = await registrationUtils.addRegistration(qrCode, registration);
+      console.log('Registration successful:', result);
       onSuccess();
     } catch (error) {
       console.error('Error submitting registration:', error);
@@ -38,6 +47,10 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData({...formData, [field]: value});
   };
 
   return (
@@ -48,7 +61,7 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
             type="text"
             placeholder="Full Name"
             value={formData.name}
-            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            onChange={(e) => handleInputChange('name', e.target.value)}
             className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
             required
           />
@@ -59,7 +72,7 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
             type="email"
             placeholder="Email Address"
             value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
+            onChange={(e) => handleInputChange('email', e.target.value)}
             className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
             required
           />
@@ -70,7 +83,7 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
             type="tel"
             placeholder="Phone Number"
             value={formData.phone}
-            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            onChange={(e) => handleInputChange('phone', e.target.value)}
             className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
             required
           />
@@ -79,7 +92,7 @@ const RegistrationForm = ({ qrCode, onSuccess }) => {
         <div>
           <select
             value={formData.ticketType}
-            onChange={(e) => setFormData({...formData, ticketType: e.target.value})}
+            onChange={(e) => handleInputChange('ticketType', e.target.value)}
             className="w-full p-4 text-lg rounded-xl border-2 border-purple-200 focus:border-purple-500 outline-none bg-white/90 backdrop-blur-sm"
           >
             <option value="general">General Admission - K150</option>
@@ -106,25 +119,39 @@ const RegisterPage = () => {
   const [registered, setRegistered] = useState(false);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchClient = async () => {
       try {
         setLoading(true);
+        setError('');
+        
+        if (!qrCode) {
+          setError('No QR code provided');
+          return;
+        }
+
+        // Use the registrationUtils to find client by QR code
+        // We'll need to get this from firebaseUtils since registrationUtils 
+        // doesn't have getClientByQRCode method
+        const { firebaseUtils } = await import('../data.jsx');
         const foundClient = await firebaseUtils.getClientByQRCode(qrCode);
+        
         setClient(foundClient);
+        
+        if (!foundClient) {
+          console.log(`No specific client found for QR code: ${qrCode}, will assign to admin`);
+        }
       } catch (error) {
         console.error('Error fetching client:', error);
+        setError('Failed to load registration form');
       } finally {
         setLoading(false);
       }
     };
 
-    if (qrCode) {
-      fetchClient();
-    } else {
-      setLoading(false);
-    }
+    fetchClient();
   }, [qrCode]);
 
   const handleRegistrationSuccess = () => {
@@ -141,6 +168,25 @@ const RegisterPage = () => {
       </div>
     );
   }
+/*
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4">
+          <div className="text-7xl mb-6">❌</div>
+          <h2 className="text-3xl font-bold text-red-600 mb-4">Error</h2>
+          <p className="text-gray-600 mb-8 text-lg">{error}</p>
+          <Link
+            to="/qr-prototype"
+            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  */
 
   if (registered) {
     return (
@@ -149,12 +195,19 @@ const RegisterPage = () => {
           <div className="text-7xl mb-6 animate-bounce">🎉</div>
           <h2 className="text-3xl font-bold text-green-600 mb-4">You're In!</h2>
           <p className="text-gray-600 mb-8 text-lg">Thanks for registering! We'll send you all the details soon.</p>
-          <Link
-            to="/qr-prototype"
-            className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
-          >
-            Back to Home
-          </Link>
+          <div className="space-y-4">
+            <Link
+              to="/qr-prototype"
+              className="block bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Home
+            </Link>
+            {client && (
+              <p className="text-sm text-gray-500">
+                Referred by: {client.name}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -177,7 +230,7 @@ const RegisterPage = () => {
           <p className="mt-4 text-xl">
             {client ? `Referred by: ${client.name}` : 'Join our exclusive celebration'}
           </p>
-          {!client && qrCode && (
+          {qrCode && (
             <p className="mt-2 text-sm opacity-75">
               QR Code: {qrCode}
             </p>
@@ -187,6 +240,16 @@ const RegisterPage = () => {
         <div className="backdrop-blur-lg bg-white/30 p-8 rounded-2xl shadow-xl max-w-lg w-full">
           <RegistrationForm qrCode={qrCode} onSuccess={handleRegistrationSuccess} />
         </div>
+        
+        {/* Debug info for development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8 bg-black/20 text-white p-4 rounded-lg text-sm max-w-lg w-full">
+            <h3 className="font-bold mb-2">Debug Info:</h3>
+            <p>QR Code: {qrCode || 'None provided'}</p>
+            <p>Client Found: {client ? client.name : 'None (will assign to admin)'}</p>
+            <p>Client ID: {client ? client.id : 'N/A'}</p>
+          </div>
+        )}
       </div>
 
       <style jsx>{`
