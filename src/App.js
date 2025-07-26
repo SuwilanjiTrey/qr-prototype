@@ -15,6 +15,7 @@ import authUtils from './utils/auth_util.jsx';
 import { firebaseUtils, clientOperationsUtils } from './components/data.jsx';
 import ClientDashboard from './components/Client/dashboard.jsx';
 import ColorFest from './components/Events/colorfest.jsx';
+//import FirebaseTestDashboard from './config/firetestUI.jsx';
 
 // Main App Component
 const App = () => {
@@ -27,6 +28,7 @@ const App = () => {
     // Initialize Firebase and user state on first load
     initializeApp();
   }, []);
+  
 
   const initializeApp = async () => {
     try {
@@ -104,17 +106,6 @@ const App = () => {
     authUtils.signOut();
   };
 
-  // Show loading spinner while initializing
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Initializing Firebase...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <Router>
@@ -130,6 +121,7 @@ const App = () => {
         <main>
           <Routes>
             <Route path="/" element={<HomePage />} />
+            {/*<Route path="/test" element={<FirebaseTestDashboard />} />*/}
             <Route path="/qr-prototype" element={<HomePage />} />
             <Route path="/qr-prototype/about" element={<AboutPage />} />
             <Route path="/qr-prototype/services" element={<ServicesPage />} />
@@ -141,6 +133,10 @@ const App = () => {
                 <LoginPage 
                   onLogin={handleLogin} 
                   isLoggedIn={isAdmin || isClient}
+                  
+                  authUtils={authUtils}
+                  firebaseUtils={firebaseUtils}
+                  clientOperationsUtils={clientOperationsUtils}
                 />
               } 
             />

@@ -1,9 +1,9 @@
-// Updated authentication utilities using Firebase Auth
 import { 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
-  onAuthStateChanged 
+  onAuthStateChanged,
+  deleteUser
 } from 'firebase/auth';
 import { 
   doc, 
@@ -11,10 +11,7 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-// You'll need to import or create firebaseUtils separately
-import { firebaseUtils } from '../components/data'; // Adjust path as needed
-
-
+import { firebaseUtils } from '../components/data';
 
 const authUtils = {
   // Sign in user with Firebase Auth
@@ -27,12 +24,14 @@ const authUtils = {
       const userData = await firebaseUtils.getClientById(user.uid);
       
       if (userData) {
-        authUtils.setCurrentUser({
+        const fullUserData = {
           id: user.uid,
           email: user.email,
           ...userData
-        });
-        return userData;
+        };
+        
+        authUtils.setCurrentUser(fullUserData);
+        return fullUserData;
       }
       
       throw new Error('User data not found in database');
@@ -44,28 +43,46 @@ const authUtils = {
 
   // Create new user account
   createUser: async (email, password, userData) => {
+    let userCredential;
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // First create the Firebase Auth user
+      userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Create user document in Firestore with the same ID as Auth user
+      // Prepare client data
       const clientData = {
         ...userData,
         email: user.email,
         createdAt: serverTimestamp(),
-        lastUpdated: serverTimestamp()
+        lastUpdated: serverTimestamp(),
+        passwordInitialized: true
       };
       
-      // Use setDoc with the Auth user ID
-      await setDoc(doc(db, 'qr_clients', user.uid), clientData);
+      // Create the document with the same ID as the Auth UID
+      await setDoc(doc(db, 'qr_client', user.uid), clientData);
       
-      return {
+      const fullUserData = {
         id: user.uid,
         email: user.email,
         ...clientData
       };
+      
+      authUtils.setCurrentUser(fullUserData);
+      return fullUserData;
+      
     } catch (error) {
       console.error('Error creating user:', error);
+      
+      // If Firestore write failed, delete the Auth user to keep consistency
+      if (userCredential && userCredential.user) {
+        try {
+          await deleteUser(userCredential.user);
+        } catch (deleteError) {
+          console.error('Error cleaning up failed user creation:', deleteError);
+        }
+      }
+      
       throw error;
     }
   },
@@ -106,7 +123,7 @@ const authUtils = {
     });
   },
 
-  // Rest of your existing authUtils methods remain the same
+  // Session management
   getCurrentUser: () => {
     try {
       const storedUser = sessionStorage.getItem('currentUser');
@@ -145,6 +162,57 @@ const authUtils = {
 
   isClient: () => {
     return authUtils.getCurrentRole() === 'client';
+  },
+
+  // Password initialization helpers
+  validateClientCredentials: async (email, qrCode) => {
+    try {
+      const client = await firebaseUtils.getClientByQRCode(qrCode);
+      
+      if (!client) {
+        return { valid: false, error: 'Invalid QR code' };
+      }
+      
+      if (client.email !== email) {
+        return { valid: false, error: 'Email does not match QR code' };
+      }
+      
+      if (client.passwordInitialized) {
+        return { valid: false, error: 'Password already initialized. Use regular login.' };
+      }
+      
+      return { valid: true, client };
+    } catch (error) {
+      console.error('Error validating client credentials:', error);
+      return { valid: false, error: 'Validation failed' };
+    }
+  },
+
+  // Initialize client password
+  initializeClientPassword: async (email, qrCode, password) => {
+    try {
+      // Validate credentials first
+      const validation = await authUtils.validateClientCredentials(email, qrCode);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+
+      const client = validation.client;
+
+      // Create Firebase Auth account and update Firestore
+      const fullUserData = await authUtils.createUser(email, password, {
+        name: client.name,
+        role: client.role,
+        qrCode: client.qrCode,
+        url: client.url,
+        phone: client.phone || ''
+      });
+
+      return fullUserData;
+    } catch (error) {
+      console.error('Error initializing client password:', error);
+      throw error;
+    }
   }
 };
 

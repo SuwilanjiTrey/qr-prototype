@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { BarChart3, Users, QrCode, Calendar, TrendingUp, Download, ExternalLink, RefreshCw } from 'lucide-react';
+import { BarChart3, Users, QrCode, Calendar, TrendingUp, Download, ExternalLink, RefreshCw, Settings, Lock, Trash2, Eye, EyeOff } from 'lucide-react';
 
 // Import Firebase utilities from data.jsx
 import { 
@@ -15,9 +15,31 @@ const ClientDashboard = ({ clientId }) => {
   const [stats, setStats] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showUrlEditor, setShowUrlEditor] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newLandingUrl, setNewLandingUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // Account deletion state
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   // Get clientId from current user if not provided
   const currentUser = authUtils.getCurrentUser();
@@ -84,6 +106,89 @@ const ClientDashboard = ({ clientId }) => {
       alert('Error updating URL. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    
+    // Validate passwords
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('New passwords do not match');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      alert('New password must be at least 6 characters long');
+      return;
+    }
+    
+    try {
+      setPasswordLoading(true);
+      
+      // Use Firebase auth utility to change password
+      await firebaseUtils.changeUserPassword(
+        passwordData.currentPassword, 
+        passwordData.newPassword
+      );
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowPasswordModal(false);
+      alert('Password updated successfully!');
+      
+    } catch (error) {
+      console.error('Error updating password:', error);
+      alert(error.message || 'Failed to update password. Please try again.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    
+    // Validate confirmation text
+    if (deleteConfirmText !== 'DELETE') {
+      alert('Please type "DELETE" to confirm account deletion');
+      return;
+    }
+    
+    if (!deletePassword) {
+      alert('Please enter your password to confirm deletion');
+      return;
+    }
+    
+    try {
+      setDeleteLoading(true);
+      
+      // Confirm with user one more time
+      const finalConfirm = window.confirm(
+        'This action cannot be undone. All your data including registrations will be permanently deleted. Are you absolutely sure?'
+      );
+      
+      if (!finalConfirm) {
+        setDeleteLoading(false);
+        return;
+      }
+      
+      // Use Firebase auth utility to delete user account
+      await firebaseUtils.deleteCurrentUserAccount(deletePassword);
+      
+      // Clear local storage and redirect
+      authUtils.clearAuth();
+      alert('Account deleted successfully. You will be redirected to the login page.');
+      window.location.href = '/login';
+      
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert(error.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -205,13 +310,11 @@ const ClientDashboard = ({ clientId }) => {
                 <span>Refresh</span>
               </button>
               <button
-                onClick={() => {
-                  authUtils.clearAuth();
-                  window.location.href = '/login';
-                }}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+                onClick={() => setShowSettings(true)}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center space-x-2"
               >
-                Logout
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
               </button>
             </div>
           </div>
@@ -414,6 +517,214 @@ const ClientDashboard = ({ clientId }) => {
           )}
         </div>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-2xl font-bold mb-6 text-center">Account Settings</h3>
+            <div className="space-y-4">
+              <button
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowPasswordModal(true);
+                }}
+                className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 flex items-center justify-center space-x-2"
+              >
+                <Lock className="w-5 h-5" />
+                <span>Change Password</span>
+              </button>
+              <button
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowDeleteModal(true);
+                }}
+                className="w-full bg-red-600 text-white py-3 px-4 rounded-md hover:bg-red-700 flex items-center justify-center space-x-2"
+              >
+                <Trash2 className="w-5 h-5" />
+                <span>Delete Account</span>
+              </button>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-full bg-gray-500 text-white py-3 px-4 rounded-md hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4">Change Password</h3>
+            <form onSubmit={handlePasswordChange}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.current ? 'text' : 'password'}
+                      value={passwordData.currentPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPasswords.current ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.new ? 'text' : 'password'}
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPasswords.new ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPasswords.confirm ? 'text' : 'password'}
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showPasswords.confirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                    setShowPasswords({ current: false, new: false, confirm: false });
+                  }}
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700"
+                  disabled={passwordLoading}
+                >
+                  {passwordLoading ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-xl font-bold mb-4 text-red-600">Delete Account</h3>
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-800">
+                <strong>Warning:</strong> This action cannot be undone. All your data including registrations will be permanently deleted.
+              </p>
+            </div>
+            <form onSubmit={handleDeleteAccount}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type "DELETE" to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder="DELETE"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Enter your password to confirm
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showDeletePassword ? 'text' : 'password'}
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowDeletePassword(!showDeletePassword)}
+                      className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+                    >
+                      {showDeletePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex space-x-4 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletePassword('');
+                    setDeleteConfirmText('');
+                    setShowDeletePassword(false);
+                  }}
+                  className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-red-600 text-white py-2 px-4 rounded-md hover:bg-red-700"
+                  disabled={deleteLoading || deleteConfirmText !== 'DELETE'}
+                >
+                  {deleteLoading ? 'Deleting...' : 'Delete Account'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* QR Code Modal */}
       {showQRModal && (
