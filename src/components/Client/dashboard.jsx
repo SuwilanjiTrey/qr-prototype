@@ -291,7 +291,7 @@ const ClientDashboard = ({ clientId }) => {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto my-24 px-4 py-12">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">Client Dashboard</h1>
@@ -321,7 +321,7 @@ const ClientDashboard = ({ clientId }) => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-[-32px]">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
